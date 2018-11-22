@@ -12,13 +12,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sound.midi.Soundbank;
 
+import com.google.gson.Gson;
+
 import Controladores.Controller;
 import Utilidades.Conexion;
 
 /**
  * Servlet implementation class DBServlet
  */
-@WebServlet("/")
 public class DBServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
        
@@ -35,7 +36,7 @@ public class DBServlet extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
-		
+		System.out.println("Ejecutando Servlet!!");
 		String opcion = (request.getParameter("opcion")!=null)?request.getParameter("opcion"):"";
 		System.out.println(opcion);
 		String ruta = "index.jsp";
@@ -43,44 +44,34 @@ public class DBServlet extends HttpServlet {
 			switch(opcion){
 				case "":
 					try {
-						loadDataBases(request.getParameter("selected"), request);
+						loadAllDataBases(ruta, request, response);
+					} catch (SQLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch(ServletException e) {
+						
+					}
+				break;
+				case "dbAjax":
+					try {
+						loadAllTablesAJAX(request.getParameter("search"), response);
+					}catch(SQLException e) {
+						e.printStackTrace();
+					}catch(IOException e) {
+						e.printStackTrace();
+					}
+					break;
+				case "dataAjax":
+					try {
+						loadDataTablesAJAX(request.getParameter("table"), request.getParameter("database"), response);
 					} catch (SQLException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-				break;
+					break;
 			}
 		}
-		request.getRequestDispatcher("jsp/"+ruta).forward(request, response);
-		/*try {
-			ArrayList<String> dbs 
-			String dbSelected = dbs.get(dbs.size()-1);
-			System.out.println("###### Base de Datos Seleccionada "+dbSelected+" ######");
-			ArrayList<String> tables = cont.getTablesDB(dbSelected);
-			System.out.println("###### Listado de las Tablas ######");
-			for(int i=0; i<tables.size(); i++) {
-				System.out.println("- "+tables.get(i));
-			}
-			System.out.println("###### Listado de los Datos y Columnas ######");
-			cont.getDataTable(tables.get(3), dbSelected);
-			ArrayList<String> columnas = cont.getColumns();
-			ArrayList<ArrayList<String>> filas = cont.getRows();
-			System.out.println("###### Columnas ######");
-			for(int i=0; i<columnas.size(); i++) {
-				System.out.println("- "+columnas.get(i));
-			}
-			System.out.println("###### Filas ######");
-			for(int i=0; i<filas.size(); i++) {
-				System.out.print("- ");
-				for(int j=0; j<filas.get(i).size(); j++) {
-					System.out.print(filas.get(i).get(j)+" ## ");
-				}
-				System.out.println();
-			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
+		
 	}
 
 	/**
@@ -91,10 +82,45 @@ public class DBServlet extends HttpServlet {
 		doGet(request, response);
 	}
 	
-	private void loadDataBases(String database, HttpServletRequest request) throws SQLException {
+	private void loadAllDataBases(String ruta, HttpServletRequest request, HttpServletResponse response) throws SQLException, ServletException, IOException {
 		Controller cont = new Controller("localhost:3306", "information_schema", "root", "");
 		ArrayList<String> databases = cont.getAllDataBases();
 		request.setAttribute("databases", databases);
+		redirect(ruta, response, request);
+	}
+	
+	private void loadAllTablesAJAX(String database, HttpServletResponse response) throws SQLException, IOException {
+		Controller cont = new Controller("localhost:3306", "information_schema", "root", "");
+		System.out.println("Comenzando la busqueda de tabla!!");
+		ArrayList<String> databases = cont.getTablesDB(database);
+		// Instruciones Devolución JSON AJAX
+		// Convertir a JSON
+		String json = new Gson().toJson(databases);
+		// Se indica el tipo de dato a devolver
+	    response.setContentType("application/json");
+	    // Se indica la codificación del texto
+	    response.setCharacterEncoding("UTF-8");
+	    // Se produce el envío
+	    response.getWriter().write(json);
+	}
+	
+	private void loadDataTablesAJAX(String table, String database, HttpServletResponse response) throws SQLException, IOException {
+		Controller cont = new Controller("localhost:3306", "information_schema", "root", "");
+		System.out.println("Comenzando la busqueda de datos!!");
+		ArrayList<ArrayList<String>> data = cont.getDataTable(table, database);
+		// Instruciones Devolución JSON AJAX
+		// Convertir a JSON
+		String json = new Gson().toJson(data);
+		// Se indica el tipo de dato a devolver
+	    response.setContentType("application/json");
+	    // Se indica la codificación del texto
+	    response.setCharacterEncoding("UTF-8");
+	    // Se produce el envío
+	    response.getWriter().write(json);
+	}
+	
+	private void redirect(String ruta, HttpServletResponse response, HttpServletRequest request) throws ServletException, IOException {
+		request.getRequestDispatcher("jsp/"+ruta).forward(request, response);
 	}
 
 }

@@ -47,8 +47,7 @@ public class Controller {
 		return tables;
 	}
 	
-	public void getDataTable(String table, String db) throws SQLException {
-		HashMap<String, ArrayList<String>> tableData = new HashMap<String, ArrayList<String>>();
+	public ArrayList<ArrayList<String>> getDataTable(String table, String db) throws SQLException {
 		String sql = "Select * from "+db+"."+table;
 		stmt = conn.createStatement();
 		rs = execQuery(sql);
@@ -60,6 +59,7 @@ public class Controller {
 			
 		}		
 		rows = new ArrayList<ArrayList<String>>();
+		rows.add(columns);
 		while(rs.next()) {
 			ArrayList<String> fila = new ArrayList<String>();
 			for(int i=0; i<columns.size(); i++) {
@@ -67,6 +67,7 @@ public class Controller {
 			}
 			rows.add(fila);
 		}
+		return rows;
 	}
 	
 	private void cleanResultSet() {
